@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LeadScoreMCP | Enterprise CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #fafbfc;
+    --border: #e2e5eb;
+    --text: #1a1d29;
+    --text-muted: #6b7280;
+    --sidebar-bg: #16192a;
+    --sidebar-text: #a1a8c3;
+    --sidebar-text-active: #ffffff;
+    --sidebar-active-bg: #262b45;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --hot: #dc6803;
+    --warm: #ca8a04;
+    --cold: #2563eb;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06);
+    --radius: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #0d0f17;
+    --surface: #161927;
+    --surface-2: #1c202f;
+    --border: #262b3d;
+    --text: #e8e9ee;
+    --text-muted: #8b91a7;
+    --sidebar-bg: #0a0c14;
+    --sidebar-active-bg: #1c1f33;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    transition: background 0.2s;
+  }
+
+  .sidebar {
+    width: 240px;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+  }
+  .sidebar-logo {
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-logo .icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff; font-size: 15px;
+  }
+  .sidebar-logo .name { color: #fff; font-weight: 700; font-size: 15px; }
+  .sidebar-logo .sub { color: #6b7290; font-size: 11px; }
+
+  .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+  .nav-section-label {
+    color: #565c78;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 14px 12px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: var(--sidebar-text);
+    font-size: 13.5px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .nav-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-text-active);
+    font-weight: 600;
+  }
+  .nav-item.active .dot { background: #818cf8; opacity: 1; }
+
+  .sidebar-footer {
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .theme-toggle {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: #cbd0e6;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.15); }
+
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar h1 { font-size: 19px; font-weight: 700; }
+  .topbar .breadcrumb { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .status-pill .live-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; }
+
+  .content { padding: 28px 32px; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+  }
+  .card.hot::before { background: var(--hot); }
+  .card.warm::before { background: var(--warm); }
+  .card.cold::before { background: var(--cold); }
+  .card .label { font-size: 12.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+  .card .value { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
+
+  .charts-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    flex: 1;
+    min-width: 300px;
+    max-width: 500px;
+    box-shadow: var(--shadow);
+  }
+  .chart-box h4 { font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px; font-weight: 600; }
+  .chart-box canvas { max-height: 260px; }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 11px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface-2); color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 6px;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn.green { background: var(--success); }
+  .btn.green:hover { background: #15803d; }
+
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+    margin-right: 8px;
+  }
+
+  .row-controls { margin-bottom: 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .status-msg { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+  .status-msg.ok { background: #dcfce7; color: #166534; }
+  [data-theme="dark"] .status-msg.ok { background: #14261a; color: #4ade80; }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 12px;
+    margin-bottom: 20px;
+  }
+  .pagination button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .pagination button:hover:not(:disabled) { background: var(--surface-2); }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagination .page-info { font-size: 12.5px; color: var(--text-muted); }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 18px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    font-size: 13px;
+    z-index: 2000;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { border-left: 3px solid var(--danger); }
+  .toast.ok { border-left: 3px solid var(--success); }
+
+  .search-dropdown {
+    display: none;
+    position: absolute;
+    top: 42px;
+    left: 0;
+    width: 380px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 1500;
+  }
+  .search-dropdown.active { display: block; }
+  .search-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .search-item:last-child { border-bottom: none; }
+  .search-item:hover { background: var(--surface-2); }
+  .search-item .search-lead { font-weight: 600; }
+  .search-item .search-meta { color: var(--text-muted); font-size: 11.5px; }
+
+  .badge { padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; }
+  .badge.hot { background: #fef0e6; color: var(--hot); }
+  .badge.warm { background: #fef9c3; color: var(--warm); }
+  .badge.cold { background: #dbeafe; color: var(--cold); }
+  .badge.urgent { background: #fee2e2; color: #b91c1c; }
+  .badge.high { background: #fef0e6; color: var(--hot); }
+  .badge.medium { background: #fef9c3; color: var(--warm); }
+  .badge.low { background: #f1f2f5; color: var(--text-muted); }
+  [data-theme="dark"] .badge.hot { background: #3a2314; color: #fdba74; }
+  [data-theme="dark"] .badge.warm { background: #3a3114; color: #fde047; }
+  [data-theme="dark"] .badge.cold { background: #142440; color: #93c5fd; }
+  [data-theme="dark"] .badge.urgent { background: #3a1414; color: #fca5a5; }
+  [data-theme="dark"] .badge.high { background: #3a2314; color: #fdba74; }
+  [data-theme="dark"] .badge.medium { background: #3a3114; color: #fde047; }
+  [data-theme="dark"] .badge.low { background: #232735; color: #9ca3af; }
+
+  .section-title { margin-bottom: 12px; font-size: 15px; font-weight: 700; }
+
+  #search-box { width: 100%; max-width: 380px; }
+
+  .spinner {
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    animation: spin 0.8s linear infinite;
+    margin: 24px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px;
+    width: 90%;
+    max-width: 720px;
+    max-height: 82vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .modal-header h3 { font-size: 18px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: var(--text); }
+  .lead-id-link { color: var(--accent); cursor: pointer; font-weight: 600; }
+  .lead-id-link:hover { text-decoration: underline; }
+
+  .chat-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(79,70,229,0.4);
+    z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-fab:hover { background: var(--accent-hover); }
+
+  .chat-panel {
+    position: fixed;
+    bottom: 92px;
+    right: 24px;
+    width: 380px;
+    height: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    display: none;
+    flex-direction: column;
+    z-index: 999;
+    overflow: hidden;
+  }
+  .chat-panel.active { display: flex; }
+
+  .chat-header {
+    background: var(--sidebar-bg);
+    color: white;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .chat-header .close-chat { cursor: pointer; opacity: 0.7; }
+  .chat-header .close-chat:hover { opacity: 1; }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chat-msg { max-width: 85%; padding: 9px 13px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+  .chat-msg.user { align-self: flex-end; background: var(--accent); color: white; }
+  .chat-msg.bot { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
+  .chat-msg.bot table { font-size: 12px; margin-top: 6px; }
+  .chat-msg.bot th, .chat-msg.bot td { padding: 6px 8px; }
+
+  .chat-input-row {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+  }
+  .chat-input-row input {
+    flex: 1;
+    margin-right: 0;
+  }
+  .full-chat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 180px);
+    box-shadow: var(--shadow);
+  }
+  .full-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .full-chat-msg { max-width: 75%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+  .full-chat-msg.user { align-self: flex-end; background: var(--accent); color: white; }
+  .full-chat-msg.bot { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
+  .full-chat-msg.bot table { font-size: 13px; margin-top: 8px; width: 100%; }
+  .full-chat-msg.bot th, .full-chat-msg.bot td { padding: 8px 12px; }
+  .full-chat-suggestions {
+    padding: 12px 24px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  .full-chat-input-row {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .full-chat-input-row input { flex: 1; margin-right: 0; padding: 12px 16px; font-size: 14px; }
+  .chat-suggestions {
+    padding: 8px 14px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  .suggestion-chip {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 10px;
+    border-radius: 14px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .suggestion-chip:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">L</div>
+    <div>
+      <div class="name">LeadScoreMCP</div>
+      <div class="sub">Enterprise CRM</div>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section-label">Analytics</div>
+    <div class="nav-item active" data-tab="overview"><span class="dot"></span>Overview</div>
+    <div class="nav-item" data-tab="leads"><span class="dot"></span>Leads</div>
+    <div class="nav-item" data-tab="quality"><span class="dot"></span>Call Quality</div>
+    <div class="nav-item" data-tab="intent"><span class="dot"></span>Intent & Sentiment</div>
+
+    <div class="nav-section-label">AI Insights</div>
+    <div class="nav-item" data-tab="predictions"><span class="dot"></span>Predictions</div>
+    <div class="nav-item" data-tab="actions"><span class="dot"></span>Action Queue</div>
+
+    <div class="nav-section-label">Engagement</div>
+    <div class="nav-item" data-tab="messages"><span class="dot"></span>Messages</div>
+    <div class="nav-item" data-tab="tools"><span class="dot"></span>Tools</div>
+    <div class="nav-item" data-tab="manager" data-roles="admin,manager"><span class="dot"></span>Manager Analytics</div>
+    <div class="nav-item" data-tab="assistant"><span class="dot"></span>AI Assistant</div>
+  </div>
+
+  <div class="sidebar-footer" style="flex-direction:column; align-items:stretch; gap:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="color:#cbd0e6; font-size:12px;">{{ username }} <span style="color:#6b7290;">({{ user_role }})</span></span>
+      <a href="/logout" style="color:#f87171; font-size:11px; text-decoration:none;">Logout</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="page-title">Overview</h1>
+      <div class="breadcrumb">LeadScoreMCP / <span id="breadcrumb-current">Overview</span></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="position:relative;">
+        <input id="global-search" placeholder="Search lead/call ID, agent, phone..." style="width:280px;" onkeypress="if(event.key==='Enter') runGlobalSearch()">
+        <div id="global-search-results" class="search-dropdown"></div>
+      </div>
+      <div class="status-pill"><span class="live-dot"></span>Live</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="panel active" id="overview">
+      <div class="cards" id="dashboard-cards"></div>
+      <div class="charts-row">
+        <div class="chart-box"><h4>Lead Category Distribution</h4><canvas id="chart-lead-dist"></canvas></div>
+      </div>
+      <h3 class="section-title">Top 10 Leads</h3>
+      <div class="table-wrap"><table id="top10-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="leads">
+      <div class="row-controls">
+        <select id="lead-category" onchange="leadsCurrentPage=1; loadLeads();">
+          <option value="all">All</option>
+          <option value="hot">Hot</option>
+          <option value="warm">Warm</option>
+          <option value="cold">Cold</option>
+        </select>
+        <button class="btn" onclick="exportCSV('leads')">Export CSV</button>
+      </div>
+      <div class="table-wrap"><table id="leads-table"><thead></thead><tbody></tbody></table></div>
+      <div class="pagination" id="leads-pagination"></div>
+    </div>
+
+    <div class="panel" id="quality">
+      <div class="cards" id="quality-cards"></div>
+      <div class="charts-row">
+        <div class="chart-box"><h4>Agent Avg Quality Score</h4><canvas id="chart-agent-quality"></canvas></div>
+        <div class="chart-box"><h4>Call Outcome Breakdown</h4><canvas id="chart-outcome"></canvas></div>
+      </div>
+      <h3 class="section-title">Agent Leaderboard</h3>
+      <div class="table-wrap"><table id="agent-leaderboard-table"><thead></thead><tbody></tbody></table></div>
+      <h3 class="section-title">Outcome Breakdown</h3>
+      <div class="table-wrap"><table id="outcome-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="intent">
+      <div class="charts-row">
+        <div class="chart-box"><h4>Intent Distribution</h4><canvas id="chart-intent"></canvas></div>
+      </div>
+      <h3 class="section-title">Intent Distribution</h3>
+      <div class="table-wrap"><table id="intent-dist-table"><thead></thead><tbody></tbody></table></div>
+      <h3 class="section-title">Top Readiness Leads</h3>
+      <div class="table-wrap"><table id="readiness-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="predictions">
+      <div class="cards" id="forecast-cards"></div>
+      <div class="charts-row">
+        <div class="chart-box"><h4>Conversion Forecast Buckets</h4><canvas id="chart-forecast"></canvas></div>
+        <div class="chart-box"><h4>Quality Trend (Weekly)</h4><canvas id="chart-quality-trend"></canvas></div>
+        <div class="chart-box"><h4>Readiness Trend (Weekly)</h4><canvas id="chart-readiness-trend"></canvas></div>
+      </div>
+      <h3 class="section-title">Sales Predictions</h3>
+      <div class="table-wrap"><table id="sales-pred-table"><thead></thead><tbody></tbody></table></div>
+      <h3 class="section-title">Site Visit Predictions</h3>
+      <div class="table-wrap"><table id="site-visit-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="actions">
+      <h3 class="section-title">Action Queue</h3>
+      <div class="table-wrap"><table id="action-queue-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="messages">
+      <div class="row-controls">
+        <select id="bulk-category">
+          <option value="hot">Hot</option>
+          <option value="warm">Warm</option>
+          <option value="cold">Cold</option>
+        </select>
+        <button class="btn green" onclick="bulkSendWhatsapp()">Send WhatsApp to Category</button>
+      </div>
+      <div id="bulk-status"></div>
+      <h3 class="section-title" style="margin-top:20px;">Message History</h3>
+      <div class="table-wrap"><table id="message-history-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="panel" id="manager">
+      <div class="cards" id="manager-cards"></div>
+    </div>
+
+    <div class="panel" id="assistant">
+      <div class="full-chat">
+        <div class="full-chat-messages" id="full-chat-messages">
+          <div class="full-chat-msg bot">Hi! Ask me anything about leads, calls, predictions, or agent performance — I'll pull real data and answer directly.</div>
+        </div>
+        <div class="full-chat-suggestions">
+          <span class="suggestion-chip" onclick="askSuggestedFull('Show me hot leads')">Hot leads</span>
+          <span class="suggestion-chip" onclick="askSuggestedFull('Revenue forecast')">Forecast</span>
+          <span class="suggestion-chip" onclick="askSuggestedFull('Action queue')">Actions</span>
+          <span class="suggestion-chip" onclick="askSuggestedFull('Agent leaderboard')">Agent Leaderboard</span>
+          <span class="suggestion-chip" onclick="askSuggestedFull('Intent distribution')">Intent Distribution</span>
+        </div>
+        <div class="full-chat-input-row">
+          <input id="full-chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter') sendFullChatMessage()">
+          <button class="btn" onclick="sendFullChatMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="tools">
+      <div class="row-controls">
+        <input id="search-box" placeholder="Search transcripts (e.g. price, competitor)">
+        <button class="btn" onclick="searchTranscripts()">Search</button>
+      </div>
+      <div class="table-wrap"><table id="search-results-table"><thead></thead><tbody></tbody></table></div>
+
+      <div class="charts-row">
+        <div class="chart-box" style="max-width:100%;"><h4>Call Volume by Hour</h4><canvas id="chart-call-time"></canvas></div>
+      </div>
+      <h3 class="section-title">Call Time Analysis</h3>
+      <div class="table-wrap"><table id="call-time-table"><thead></thead><tbody></tbody></table></div>
+
+      <h3 class="section-title">Conversion Funnel</h3>
+      <div class="table-wrap"><table id="funnel-table"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="lead-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Lead Detail</h3>
+      <button class="modal-close" onclick="closeLeadModal()">✕</button>
+    </div>
+    <div id="modal-body"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<button class="chat-fab" onclick="toggleChat()">💬</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <span>CRM Assistant</span>
+    <span class="close-chat" onclick="toggleChat()">✕</span>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg bot">Hi! Ask me about leads, calls, predictions, or agent performance.</div>
+  </div>
+  <div class="chat-suggestions">
+    <span class="suggestion-chip" onclick="askSuggested('Show me hot leads')">Hot leads</span>
+    <span class="suggestion-chip" onclick="askSuggested('Revenue forecast')">Forecast</span>
+    <span class="suggestion-chip" onclick="askSuggested('Action queue')">Actions</span>
+  </div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+    <button class="btn" onclick="sendChatMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+const CHART_COLORS = ["#dc6803", "#ca8a04", "#2563eb", "#7c3aed", "#16a34a", "#dc2626", "#0891b2"];
+let chartInstances = {};
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute("data-theme") === "dark";
+  html.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.getElementById("theme-toggle-btn").textContent = isDark ? "🌙 Dark" : "☀️ Light";
+  localStorage.setItem("theme", isDark ? "light" : "dark");
+  loadTabData(getActiveTab());
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem("theme") || "dark";
+  document.documentElement.setAttribute("data-theme", saved);
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("theme") || "dark";
+  document.getElementById("theme-toggle-btn").textContent = saved === "dark" ? "☀️ Light" : "🌙 Dark";
+});
+
+function getActiveTab() {
+  const active = document.querySelector(".nav-item.active");
+  return active ? active.dataset.tab : "overview";
+}
+
+async function fetchJSON(url, options) {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({message: "Unknown error"}));
+      showToast(`Error: ${errData.message || res.statusText}`, "err");
+      throw new Error(errData.message || res.statusText);
+    }
+    return await res.json();
+  } catch (err) {
+    if (err.message !== undefined && !err.message.startsWith("Error:")) {
+      showToast("Connection error — check the server is running", "err");
+    }
+    throw err;
+  }
+}
+
+function showToast(message, type = "ok") {
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function renderTable(tableId, columns, rows) {
+  const table = document.getElementById(tableId);
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  thead.innerHTML = "<tr>" + columns.map(c => `<th>${c.label}</th>`).join("") + "</tr>";
+  tbody.innerHTML = rows.map(r =>
+    "<tr>" + columns.map(c => `<td>${c.render ? c.render(r) : (r[c.key] ?? "")}</td>`).join("") + "</tr>"
+  ).join("");
+}
+
+function badge(text, cls) {
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function chartTextColor() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "#8b91a7" : "#6b7280";
+}
+function chartGridColor() {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "#262b3d" : "#e2e5eb";
+}
+
+function renderChart(canvasId, type, labels, data, colors) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+  chartInstances[canvasId] = new Chart(ctx, {
+    type: type,
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors || CHART_COLORS,
+        borderColor: document.documentElement.getAttribute("data-theme") === "dark" ? "#161927" : "#ffffff",
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: type === "bar" ? "top" : "right",
+          labels: { color: chartTextColor(), font: { size: 11 }, boxWidth: 12 },
+          display: type !== "bar",
+        },
+        tooltip: { backgroundColor: "#1a1d27", titleColor: "#fff", bodyColor: "#e5e7eb" },
+      },
+      scales: type === "bar" ? {
+        x: { ticks: { color: chartTextColor() }, grid: { color: chartGridColor() } },
+        y: { ticks: { color: chartTextColor() }, grid: { color: chartGridColor() }, beginAtZero: true }
+      } : {}
+    }
+  });
+}
+
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    item.classList.add("active");
+    document.getElementById(item.dataset.tab).classList.add("active");
+    const label = item.textContent.trim();
+    document.getElementById("page-title").textContent = label;
+    document.getElementById("breadcrumb-current").textContent = label;
+    loadTabData(item.dataset.tab);
+  });
+});
+
+// ============= GLOBAL SEARCH =============
+async function runGlobalSearch() {
+  const term = document.getElementById("global-search").value.trim();
+  const dropdown = document.getElementById("global-search-results");
+  if (!term) { dropdown.classList.remove("active"); return; }
+
+  const results = await fetchJSON(`/api/search?q=${encodeURIComponent(term)}`);
+  if (!results.length) {
+    dropdown.innerHTML = `<div class="search-item">No matches found</div>`;
+  } else {
+    dropdown.innerHTML = results.map(r => `
+      <div class="search-item" onclick="openLeadDetail('${r.lead_id}'); document.getElementById('global-search-results').classList.remove('active');">
+        <div class="search-lead">Lead ${r.lead_id} — Call ${r.call_id}</div>
+        <div class="search-meta">${r.agent_name || "N/A"} | ${r.status || "N/A"} | ${r.phone_number || "N/A"}</div>
+      </div>
+    `).join("");
+  }
+  dropdown.classList.add("active");
+}
+
+document.getElementById("global-search").addEventListener("input", () => {
+  clearTimeout(window._searchDebounce);
+  window._searchDebounce = setTimeout(runGlobalSearch, 400);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#global-search") && !e.target.closest("#global-search-results")) {
+    document.getElementById("global-search-results").classList.remove("active");
+  }
+});
+
+// ============= CSV EXPORT =============
+function exportCSV(table) {
+  window.location.href = `/api/export/${table}`;
+}
+
+// ============= LEAD NOTES =============
+async function loadLeadNotes(leadId) {
+  const notes = await fetchJSON(`/api/lead/${leadId}/notes`);
+  const container = document.getElementById("lead-notes-list");
+  if (!notes.length) {
+    container.innerHTML = `<p style="color:var(--text-muted); font-size:12.5px;">No notes yet.</p>`;
+  } else {
+    container.innerHTML = notes.map(n => `
+      <div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:12.5px;">
+        <div>${n.note}</div>
+        <div style="color:var(--text-muted); font-size:11px; margin-top:3px;">${n.created_at}</div>
+      </div>
+    `).join("");
+  }
+}
+
+async function addLeadNote(leadId) {
+  const input = document.getElementById("new-note-input");
+  const note = input.value.trim();
+  if (!note) return;
+
+  await fetchJSON(`/api/lead/${leadId}/notes`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({note}),
+  });
+  input.value = "";
+  loadLeadNotes(leadId);
+}
+
+async function loadTabData(tab) {
+  try {
+    if (tab === "overview") await loadOverview();
+    if (tab === "leads") await loadLeads();
+    if (tab === "quality") await loadQuality();
+    if (tab === "intent") await loadIntent();
+    if (tab === "predictions") await loadPredictions();
+    if (tab === "actions") await loadActions();
+    if (tab === "messages") await loadMessages();
+    if (tab === "tools") await loadTools();
+    if (tab === "manager") await loadManagerAnalytics();
+    if (tab === "assistant") { /* self-contained */ }
+  } catch (err) {
+    console.error(`Failed loading tab ${tab}:`, err);
+  }
+}
+
+async function loadOverview() {
+  const stats = await fetchJSON("/api/dashboard-stats");
+  document.getElementById("dashboard-cards").innerHTML = `
+    <div class="card"><div class="label">Total Leads</div><div class="value">${stats.total_leads}</div></div>
+    <div class="card hot"><div class="label">Hot Leads</div><div class="value">${stats.hot_leads}</div></div>
+    <div class="card warm"><div class="label">Warm Leads</div><div class="value">${stats.warm_leads}</div></div>
+    <div class="card cold"><div class="label">Cold Leads</div><div class="value">${stats.cold_leads}</div></div>
+  `;
+  renderChart("chart-lead-dist", "doughnut", ["Hot", "Warm", "Cold"], [stats.hot_leads, stats.warm_leads, stats.cold_leads], ["#dc6803", "#ca8a04", "#2563eb"]);
+
+  const top10 = await fetchJSON("/api/leads/top10");
+  renderTable("top10-table", [
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Score", render: r => badge(r.score, r.category.toLowerCase())},
+    {label: "Agent", key: "agent_name"},
+    {label: "Status", key: "status"},
+  ], top10);
+}
+
+let leadsCurrentPage = 1;
+const leadsPageSize = 25;
+
+async function loadLeads(page) {
+  if (page) leadsCurrentPage = page;
+  const category = document.getElementById("lead-category").value;
+  const res = await fetchJSON(`/api/leads?category=${category}&page=${leadsCurrentPage}&page_size=${leadsPageSize}`);
+
+  renderTable("leads-table", [
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Score", render: r => badge(r.score, r.category.toLowerCase())},
+    {label: "Agent", key: "agent_name"},
+    {label: "Status", key: "status"},
+    {label: "Actions", render: r => `<button class="btn" onclick="sendWhatsappFor('${r.lead_id}')">Send WhatsApp</button>`},
+  ], res.items);
+
+  renderPagination("leads-pagination", res.page, res.total_pages, res.total, loadLeads);
+}
+
+function renderPagination(containerId, currentPage, totalPages, totalItems, loadFn) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+    <span class="page-info">Page ${currentPage} of ${totalPages || 1} (${totalItems} total)</span>
+    <button ${currentPage <= 1 ? "disabled" : ""} onclick="(${loadFn.name})(${currentPage - 1})">Previous</button>
+    <button ${currentPage >= totalPages ? "disabled" : ""} onclick="(${loadFn.name})(${currentPage + 1})">Next</button>
+  `;
+}
+
+async function sendWhatsappFor(leadId) {
+  const res = await fetchJSON(`/api/send-whatsapp/${leadId}`, {method: "POST"});
+  alert(res.message);
+}
+
+async function loadQuality() {
+  const stats = await fetchJSON("/api/quality-stats");
+  document.getElementById("quality-cards").innerHTML = `
+    <div class="card"><div class="label">Analyzed</div><div class="value">${stats.total_analyzed}</div></div>
+    <div class="card hot"><div class="label">Avg Quality</div><div class="value">${stats.avg_quality}</div></div>
+    <div class="card warm"><div class="label">Successful</div><div class="value">${stats.successful}</div></div>
+    <div class="card cold"><div class="label">Unsuccessful</div><div class="value">${stats.unsuccessful}</div></div>
+  `;
+
+  const agents = await fetchJSON("/api/agent-leaderboard");
+  renderTable("agent-leaderboard-table", [
+    {label: "Agent", render: r => `<span class="lead-id-link" onclick="openAgentDetail('${r.agent_name}')">${r.agent_name || 'N/A'}</span>`},
+    {label: "Total Calls", key: "total_calls"},
+    {label: "Avg Quality", key: "avg_quality"},
+    {label: "Successful", key: "successful_calls"},
+    {label: "Avg Readiness", key: "avg_readiness"},
+  ], agents);
+  renderChart("chart-agent-quality", "bar", agents.map(a => a.agent_name || "N/A"), agents.map(a => a.avg_quality || 0));
+
+  const outcomes = await fetchJSON("/api/outcome-breakdown");
+  renderTable("outcome-table", [
+    {label: "Outcome", key: "call_outcome"},
+    {label: "Count", key: "call_count"},
+    {label: "Avg Quality", key: "avg_quality"},
+  ], outcomes);
+  renderChart("chart-outcome", "pie", outcomes.map(o => o.call_outcome), outcomes.map(o => o.call_count), ["#16a34a", "#ca8a04", "#dc2626"]);
+}
+
+async function loadIntent() {
+  const dist = await fetchJSON("/api/intent-distribution");
+  renderTable("intent-dist-table", [
+    {label: "Intent", key: "buyer_intent"},
+    {label: "Count", key: "count"},
+    {label: "Avg Readiness", key: "avg_readiness"},
+  ], dist);
+  renderChart("chart-intent", "pie", dist.map(d => d.buyer_intent), dist.map(d => d.count));
+
+  const readiness = await fetchJSON("/api/readiness-top?limit=10");
+  renderTable("readiness-table", [
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Call ID", key: "call_id"},
+    {label: "Intent", key: "buyer_intent"},
+    {label: "Readiness", render: r => r.readiness_score + "%"},
+  ], readiness);
+}
+
+async function loadPredictions() {
+  const forecast = await fetchJSON("/api/predictions/forecast");
+  document.getElementById("forecast-cards").innerHTML = `
+    <div class="card"><div class="label">Expected Conversions</div><div class="value">${forecast.expected_conversions}</div></div>
+    <div class="card hot"><div class="label">Very Likely</div><div class="value">${forecast.very_likely_count}</div></div>
+    <div class="card warm"><div class="label">Likely</div><div class="value">${forecast.likely_count}</div></div>
+    <div class="card cold"><div class="label">Unlikely</div><div class="value">${forecast.unlikely_count}</div></div>
+  `;
+  renderChart("chart-forecast", "doughnut",
+    ["Very Likely", "Likely", "Possible", "Unlikely"],
+    [forecast.very_likely_count, forecast.likely_count, forecast.possible_count, forecast.unlikely_count],
+    ["#16a34a", "#ca8a04", "#dc6803", "#6b7280"]
+  );
+
+  const sales = await fetchJSON("/api/predictions/sales?limit=10");
+  renderTable("sales-pred-table", [
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Agent", key: "agent_name"},
+    {label: "Probability", render: r => r.conversion_probability + "%"},
+    {label: "Intent", key: "buyer_intent"},
+  ], sales);
+
+  const visits = await fetchJSON("/api/predictions/site-visit?limit=10");
+  renderTable("site-visit-table", [
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Agent", key: "agent_name"},
+    {label: "Visit Probability", render: r => r.site_visit_probability + "%"},
+    {label: "Intent", key: "buyer_intent"},
+  ], visits);
+
+  const qTrend = await fetchJSON("/api/trends/quality");
+  renderChart("chart-quality-trend", "line", qTrend.map(t => t.week_start), qTrend.map(t => t.avg_quality), ["#4f46e5"]);
+
+  const rTrend = await fetchJSON("/api/trends/readiness");
+  renderChart("chart-readiness-trend", "line", rTrend.map(t => t.week_start), rTrend.map(t => t.avg_readiness), ["#16a34a"]);
+}
+
+async function loadActions() {
+  const actions = await fetchJSON("/api/predictions/action-queue?limit=15");
+  renderTable("action-queue-table", [
+    {label: "Priority", render: r => badge(r.priority, r.priority.toLowerCase())},
+    {label: "Lead ID", render: r => `<span class="lead-id-link" onclick="openLeadDetail('${r.lead_id}')">${r.lead_id}</span>`},
+    {label: "Probability", render: r => r.conversion_probability + "%"},
+    {label: "Recommended Action", key: "recommended_action"},
+  ], actions);
+}
+
+async function bulkSendWhatsapp() {
+  const category = document.getElementById("bulk-category").value;
+  document.getElementById("bulk-status").innerHTML = `<div class="spinner"></div>`;
+  const res = await fetchJSON(`/api/bulk-whatsapp/${category}?limit=10`, {method: "POST"});
+  document.getElementById("bulk-status").innerHTML =
+    `<div class="status-msg ok">Sent: ${res.sent} | Skipped: ${res.skipped} | Failed: ${res.failed}</div>`;
+  loadMessages();
+}
+
+async function loadMessages() {
+  const history = await fetchJSON("/api/message-history?limit=20");
+  renderTable("message-history-table", [
+    {label: "Lead ID", key: "lead_id"},
+    {label: "Channel", key: "channel"},
+    {label: "Recipient", key: "recipient"},
+    {label: "Status", key: "status"},
+    {label: "Sent At", key: "sent_at"},
+  ], history);
+}
+
+async function searchTranscripts() {
+  const q = document.getElementById("search-box").value;
+  if (!q) return;
+  const results = await fetchJSON(`/api/search-transcripts?q=${encodeURIComponent(q)}&limit=15`);
+  renderTable("search-results-table", [
+    {label: "Call ID", key: "call_id"},
+    {label: "Lead ID", key: "lead_id"},
+    {label: "Agent", key: "agent_name"},
+    {label: "Snippet", key: "snippet"},
+  ], results);
+}
+
+async function loadTools() {
+  const callTime = await fetchJSON("/api/call-time-analysis");
+  renderTable("call-time-table", [
+    {label: "Hour", render: r => r.call_hour + ":00"},
+    {label: "Total Calls", key: "total_calls"},
+    {label: "Connected", key: "connected"},
+    {label: "Avg Duration", render: r => r.avg_duration + "s"},
+  ], callTime);
+  renderChart("chart-call-time", "bar", callTime.map(c => c.call_hour + ":00"), callTime.map(c => c.total_calls), ["#4f46e5"]);
+
+  const funnel = await fetchJSON("/api/conversion-funnel");
+  const funnelRows = Object.entries(funnel).map(([k, v]) => ({stage: k.replace(/_/g, " "), count: v}));
+  renderTable("funnel-table", [
+    {label: "Stage", key: "stage"},
+    {label: "Count", key: "count"},
+  ], funnelRows);
+}
+
+async function openLeadDetail(leadId) {
+  document.getElementById("modal-title").textContent = `Lead ${leadId}`;
+  document.getElementById("modal-body").innerHTML = '<div class="spinner"></div>';
+  document.getElementById("lead-modal").classList.add("active");
+
+  const data = await fetchJSON(`/api/lead/${leadId}`);
+  const detail = data.detail;
+  const analysis = data.analysis;
+
+  let html = "";
+
+  if (detail) {
+    html += `
+      <p style="margin-bottom:6px;"><strong>Score:</strong> ${badge(detail.best_score, detail.best_category.toLowerCase())}</p>
+      <p style="margin-bottom:6px;"><strong>Agent:</strong> ${detail.agent_name || "N/A"}</p>
+      <p style="margin-bottom:14px;"><strong>Total Calls:</strong> ${detail.total_calls}</p>
+      <button class="btn green" onclick="sendWhatsappFor('${leadId}'); closeLeadModal();">Send WhatsApp</button>
+    `;
+  }
+
+  if (analysis && analysis.calls && analysis.calls.length) {
+    html += `<h4 style="margin:18px 0 8px;">AI Analysis (${analysis.calls.length})</h4>`;
+    html += `<div class="table-wrap"><table><thead><tr><th>Call ID</th><th>Date</th><th>Agent</th><th>Quality</th><th>Outcome</th><th>Intent</th><th>Readiness</th></tr></thead><tbody>`;
+    analysis.calls.forEach(c => {
+      html += `<tr>
+        <td>${c.call_id}</td><td>${c.call_date ? String(c.call_date).slice(0,10) : "N/A"}</td>
+        <td>${c.agent_name ?? "N/A"}</td><td>${c.quality_score ?? "N/A"}</td>
+        <td>${c.call_outcome ?? "N/A"}</td><td>${c.buyer_intent ?? "N/A"}</td><td>${c.readiness_score ?? "N/A"}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  } else {
+    html += `<p style="margin:14px 0; color:var(--text-muted);">No AI-analyzed calls for this lead yet.</p>`;
+  }
+
+  if (detail && detail.call_history && detail.call_history.length) {
+    html += `<h4 style="margin:18px 0 8px;">Full Call History (${detail.call_history.length})</h4>`;
+    html += `<div class="table-wrap"><table><thead><tr><th>Call ID</th><th>Date</th><th>Status</th><th>Type</th><th>Duration</th><th>Score</th><th>Transcript</th></tr></thead><tbody>`;
+    detail.call_history.forEach(c => {
+      html += `<tr>
+        <td>${c.call_id}</td><td>${c.call_date ? String(c.call_date).slice(0,10) : "N/A"}</td>
+        <td>${c.status ?? "N/A"}</td><td>${c.call_type ?? "N/A"}</td><td>${c.duration_sec ?? 0}s</td>
+        <td>${badge(c.score, c.category ? c.category.toLowerCase() : "cold")}</td>
+        <td>${c.has_transcript ? "Yes" : "No"}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  if (!detail && !(analysis && analysis.calls && analysis.calls.length)) html = "<p>No data found for this lead.</p>";
+
+  html += `
+    <h4 style="margin:18px 0 8px;">Notes</h4>
+    <div id="lead-notes-list"></div>
+    <div class="row-controls" style="margin-top:10px;">
+      <input id="new-note-input" placeholder="Add a note..." style="flex:1;">
+      <button class="btn" onclick="addLeadNote('${leadId}')">Add Note</button>
+    </div>
+  `;
+
+  document.getElementById("modal-body").innerHTML = html;
+  loadLeadNotes(leadId);
+}
+
+function closeLeadModal() { document.getElementById("lead-modal").classList.remove("active"); }
+document.getElementById("lead-modal").addEventListener("click", (e) => { if (e.target.id === "lead-modal") closeLeadModal(); });
+
+async function openAgentDetail(agentName) {
+  document.getElementById("modal-title").textContent = `Agent: ${agentName}`;
+  document.getElementById("modal-body").innerHTML = '<div class="spinner"></div>';
+  document.getElementById("lead-modal").classList.add("active");
+
+  const detail = await fetchJSON(`/api/agent/${encodeURIComponent(agentName)}`);
+
+  let html = `
+    <p style="margin-bottom:6px;"><strong>Total Calls:</strong> ${detail.total_calls}</p>
+    <p style="margin-bottom:6px;"><strong>Analyzed Calls:</strong> ${detail.analyzed_calls}</p>
+    <p style="margin-bottom:6px;"><strong>Avg Quality:</strong> ${detail.avg_quality}/100</p>
+    <p style="margin-bottom:14px;"><strong>Successful Calls:</strong> ${detail.successful_calls}</p>
+    <h4 style="margin:14px 0 8px;">Recent Calls</h4>
+    <div class="table-wrap"><table><thead><tr><th>Call ID</th><th>Lead ID</th><th>Date</th><th>Status</th><th>Quality</th><th>Outcome</th><th>Intent</th></tr></thead><tbody>
+  `;
+
+  detail.calls.slice(0, 30).forEach(c => {
+    html += `<tr>
+      <td>${c.call_id}</td>
+      <td><span class="lead-id-link" onclick="openLeadDetail('${c.lead_id}')">${c.lead_id}</span></td>
+      <td>${c.call_date ? String(c.call_date).slice(0,10) : "N/A"}</td>
+      <td>${c.status ?? "N/A"}</td>
+      <td>${c.quality_score ?? "N/A"}</td>
+      <td>${c.call_outcome ?? "N/A"}</td>
+      <td>${c.buyer_intent ?? "N/A"}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  document.getElementById("modal-body").innerHTML = html;
+}
+
+function toggleChat() {
+  document.getElementById("chat-panel").classList.toggle("active");
+}
+
+function addChatMessage(text, sender) {
+  const container = document.getElementById("chat-messages");
+  const msg = document.createElement("div");
+  msg.className = `chat-msg ${sender}`;
+  msg.innerHTML = text;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+function simpleMarkdownToHtml(text) {
+  const lines = text.split("\n");
+  let html = "";
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const isTableRow = line.trim().startsWith("|") && line.trim().endsWith("|");
+    const nextLine = lines[i + 1] || "";
+    const isSeparatorNext = /^\s*\|?[\s:|-]+\|?\s*$/.test(nextLine) && nextLine.includes("-");
+
+    if (isTableRow && isSeparatorNext) {
+      // Found a markdown table: header + separator + body rows
+      const headerCells = line.split("|").map(c => c.trim()).filter(c => c.length);
+      let tableHtml = "<table><thead><tr>" + headerCells.map(h => `<th>${h}</th>`).join("") + "</tr></thead><tbody>";
+
+      i += 2; // skip header + separator
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        const cells = lines[i].split("|").map(c => c.trim()).filter((c, idx, arr) => !(idx === 0 && c === "") && !(idx === arr.length - 1 && c === ""));
+        if (cells.length) {
+          tableHtml += "<tr>" + cells.map(c => `<td>${c}</td>`).join("") + "</tr>";
+        }
+        i++;
+      }
+      tableHtml += "</tbody></table>";
+      html += tableHtml;
+      continue; // don't increment i again, already advanced in inner loop
+    }
+
+    // Regular line: bold + line break
+    const formatted = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    html += formatted + "<br>";
+    i++;
+  }
+
+  return html;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById("chat-input");
+  const question = input.value.trim();
+  if (!question) return;
+
+  addChatMessage(question, "user");
+  input.value = "";
+  addChatMessage('<div class="spinner" style="margin:6px auto;"></div>', "bot");
+
+  const res = await fetchJSON("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({question}),
+  });
+
+  const container = document.getElementById("chat-messages");
+  container.removeChild(container.lastChild);
+
+  addChatMessage(simpleMarkdownToHtml(res.answer), "bot");
+}
+
+function askSuggested(text) {
+  document.getElementById("chat-input").value = text;
+  sendChatMessage();
+}
+
+function addFullChatMessage(text, sender) {
+  const container = document.getElementById("full-chat-messages");
+  const msg = document.createElement("div");
+  msg.className = `full-chat-msg ${sender}`;
+  msg.innerHTML = text;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendFullChatMessage() {
+  const input = document.getElementById("full-chat-input");
+  const question = input.value.trim();
+  if (!question) return;
+
+  addFullChatMessage(question, "user");
+  input.value = "";
+  addFullChatMessage('<div class="spinner" style="margin:6px auto;"></div>', "bot");
+
+  const res = await fetchJSON("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({question}),
+  });
+
+  const container = document.getElementById("full-chat-messages");
+  container.removeChild(container.lastChild);
+
+  addFullChatMessage(simpleMarkdownToHtml(res.answer), "bot");
+}
+
+function askSuggestedFull(text) {
+  document.getElementById("full-chat-input").value = text;
+  sendFullChatMessage();
+}
+
+async function loadManagerAnalytics() {
+  const d = await fetchJSON("/api/manager-analytics");
+  const s = d.sentiment_breakdown || {};
+  document.getElementById("manager-cards").innerHTML = `
+    <div class="card hot"><div class="label">Best Salesperson</div><div class="value" style="font-size:18px;">${d.best_salesperson ? d.best_salesperson.agent_name : "N/A"}</div></div>
+    <div class="card cold"><div class="label">Most Lost Leads (Agent)</div><div class="value" style="font-size:18px;">${d.most_lost_leads_agent ? d.most_lost_leads_agent.agent_name : "N/A"}</div></div>
+    <div class="card"><div class="label">Avg Call Time</div><div class="value">${d.avg_call_time_sec}s</div></div>
+    <div class="card warm"><div class="label">Conversion Rate</div><div class="value">${d.conversion_rate}%</div></div>
+    <div class="card hot"><div class="label">Positive Sentiment</div><div class="value">${s.positive || 0}</div></div>
+    <div class="card cold"><div class="label">Negative Sentiment</div><div class="value">${s.negative || 0}</div></div>
+  `;
+}
+
+loadOverview();
+
+// ============= ROLE-BASED ACCESS =============
+const CURRENT_USER_ROLE = "{{ user_role }}";
+
+function applyRoleRestrictions() {
+  document.querySelectorAll(".nav-item[data-roles]").forEach(item => {
+    const allowedRoles = item.dataset.roles.split(",");
+    if (!allowedRoles.includes(CURRENT_USER_ROLE)) {
+      item.style.display = "none";
+    }
+  });
+}
+
+applyRoleRestrictions();
+
+
+loadOverview();
+
+// ============= AUTO-REFRESH =============
+setInterval(() => {
+  const tab = getActiveTab();
+  if (tab !== "assistant") loadTabData(tab); // don't refresh chat, would clear conversation
+}, 30000);
+
+</script>
+
+</body>
+</html>

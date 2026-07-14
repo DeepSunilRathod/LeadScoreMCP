@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>LeadScoreMCP | Login</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0d0f17; color: #e8e9ee; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .box { background: #161927; border: 1px solid #262b3d; border-radius: 12px; padding: 36px; width: 320px; }
+  .box h2 { margin-bottom: 20px; text-align: center; }
+  input { width: 100%; padding: 10px 12px; margin-bottom: 12px; background: #1c202f; border: 1px solid #262b3d; color: #e8e9ee; border-radius: 6px; box-sizing: border-box; }
+  button { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  button:hover { background: #4338ca; }
+  .err { color: #f87171; font-size: 13px; margin-bottom: 10px; text-align: center; }
+  .hint { color: #6b7280; font-size: 11px; margin-top: 14px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h2>LeadScoreMCP</h2>
+    <div class="err" id="err"></div>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="doLogin()">Login</button>
+    <div class="hint">Try: admin/admin123, manager1/manager123, sales1/sales123</div>
+  </div>
+  <script>
+    async function doLogin() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, password}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = "/";
+      } else {
+        document.getElementById("err").textContent = data.message || "Login failed";
+      }
+    }
+    document.addEventListener("keypress", e => { if (e.key === "Enter") doLogin(); });
+  </script>
+</body>
+</html>
