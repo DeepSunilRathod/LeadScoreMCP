@@ -10,6 +10,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      GEMINI_API_KEY: dummy-key-for-ci
+      DB_HOST: localhost
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: dummy-password
+      DB_NAME: leads_db
+      GMAIL_ADDRESS: dummy@example.com
+      GMAIL_APP_PASSWORD: dummy1234567890
+      TWILIO_ACCOUNT_SID: dummy-sid
+      TWILIO_AUTH_TOKEN: dummy-token
+      TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+      ENV: development
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
