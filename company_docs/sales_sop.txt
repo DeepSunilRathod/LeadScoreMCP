@@ -1,0 +1,26 @@
+SALES STANDARD OPERATING PROCEDURE
+
+1. LEAD RESPONSE TIME
+All new leads must be contacted within 30 minutes of assignment during business hours (9 AM - 7 PM IST).
+
+2. FOLLOW-UP CADENCE
+- Day 1: Initial call
+- Day 3: Follow-up call if no response
+- Day 7: WhatsApp message with product info
+- Day 14: Final follow-up email before marking as cold
+
+3. QUALIFYING QUESTIONS
+Every sales call must cover:
+- What CRM/tool are they currently using, if any?
+- What is their team size?
+- What is their monthly lead volume?
+- What is their budget range?
+- What is their decision timeline?
+
+4. OBJECTION HANDLING
+- "Too expensive": Pivot to ROI and time saved, not just price
+- "Already have a CRM": Ask what's missing from their current solution
+- "Need to think about it": Offer a free trial or demo instead of pushing for immediate close
+
+5. ESCALATION
+Leads with deal size above ₹50,000/year must be escalated to the Sales Manager before finalizing pricing.

@@ -1,0 +1,19 @@
+FREQUENTLY ASKED QUESTIONS
+
+Q: Can I cancel anytime?
+A: Yes, all plans are month-to-month with no long-term contract required. Annual plans can be cancelled with a prorated refund.
+
+Q: Do you offer EMI payment options?
+A: Yes, EMI is available for Enterprise plans and annual commitments above ₹10,000, through our payment partner. EMI options typically range from 3 to 12 months.
+
+Q: Is training included?
+A: Yes, all plans include a free 1-hour onboarding session. Enterprise plans include ongoing training sessions.
+
+Q: What integrations are supported?
+A: We support Meta Ads, Google Ads, 99acres, Housing.com, and custom webhook integrations for lead capture.
+
+Q: Is my data secure?
+A: Yes, all data is encrypted at rest and in transit. We are working towards SOC 2 compliance.
+
+Q: Can individuals/freelancers use this, not just companies?
+A: Yes, the Starter plan is designed for individuals and freelancers as well as small teams.

@@ -31,6 +31,7 @@ from agents.predictions import (
     get_next_best_action, get_action_queue,
     get_site_visit_predictions, get_lead_site_visit_probability
 )
+from lib.db import query as db_query
 
 
 # ============================================================
@@ -106,6 +107,58 @@ questions. Keep it factual and data-first."""
 
     return call_gemini(prompt, max_tokens=1000, temperature=0.2)
 
+def search_knowledge_base(query_text, limit=4):
+    """
+    Simple keyword-based retrieval: find chunks that share the most
+    words with the query. Good enough for a small document set.
+    """
+    words = [w.lower() for w in query_text.split() if len(w) > 3]
+    if not words:
+        return []
+
+    all_chunks = db_query("SELECT source_file, chunk_text FROM knowledge_base")
+
+    scored = []
+    for chunk in all_chunks:
+        text_lower = chunk["chunk_text"].lower()
+        score = sum(1 for w in words if w in text_lower)
+        if score > 0:
+            scored.append((score, chunk))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [c for _, c in scored[:limit]]
+
+
+def answer_from_knowledge_base(question):
+    """
+    RAG: retrieve relevant company document chunks, then ask Gemini
+    to answer using ONLY that context.
+    """
+    chunks = search_knowledge_base(question)
+
+    if not chunks:
+        return {
+            "answer": "I couldn't find anything relevant in our company documents for that question.",
+            "sources": [],
+        }
+
+    context = "\n\n---\n\n".join([f"[From {c['source_file']}]\n{c['chunk_text']}" for c in chunks])
+
+    prompt = f"""You are a sales assistant. Answer the salesperson's question using ONLY 
+the company knowledge provided below. If the answer isn't in the provided context, 
+say so clearly rather than guessing.
+
+COMPANY KNOWLEDGE:
+{context}
+
+QUESTION: {question}
+
+Provide a direct, practical answer a salesperson could use immediately on a call."""
+
+    answer = call_gemini(prompt, max_tokens=600, temperature=0.2)
+
+    sources = list(set(c["source_file"] for c in chunks))
+    return {"answer": answer, "sources": sources}
 
 def answer_question(question):
     """

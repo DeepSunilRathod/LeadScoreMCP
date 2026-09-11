@@ -47,6 +47,7 @@ app = Server("leadscore-mcp")
 
 from agents.call_analysis import generate_meeting_summary
 from lib.db import execute
+from lib.chatbot import answer_from_knowledge_base
 
 
 
@@ -488,6 +489,17 @@ async def list_tools():
                 "type": "object",
                 "properties": {"call_id": {"type": "string", "description": "Call ID"}},
                 "required": ["call_id"],
+            },
+        ),
+        Tool(
+            name="ask_company_knowledge",
+            description="Answer a sales question using company documents (SOP, pricing, FAQs). Use when asked 'what should I tell the customer about X' or similar policy/pricing questions.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string", "description": "The question to answer using company knowledge"},
+                },
+                "required": ["question"],
             },
         ),
     ]
@@ -1159,6 +1171,13 @@ async def call_tool(name: str, arguments: dict):
                 f"Mood: {result['customer_mood']}",
                 f"Objections: {', '.join(result['objections'])}",
             ]
+            return [TextContent(type="text", text="\n".join(lines))]
+        
+        if name == "ask_company_knowledge":
+            result = answer_from_knowledge_base(arguments["question"])
+            lines = [result["answer"]]
+            if result["sources"]:
+                lines.append(f"\n(Source: {', '.join(result['sources'])})")
             return [TextContent(type="text", text="\n".join(lines))]
 
         return [TextContent(type="text", text=f"Unknown tool: {name}")]

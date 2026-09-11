@@ -46,6 +46,7 @@ from lib.leads import add_lead_note, get_lead_notes, search_leads_and_calls
 import csv
 import io
 from flask import Response
+from lib.chatbot import answer_from_knowledge_base
 
 # ============================================================
 # LOAD ENVIRONMENT VARIABLES
@@ -117,6 +118,15 @@ def api_manager_analytics():
     if session["user"]["role"] not in ("admin", "manager"):
         return jsonify({"error": True, "message": "Access denied — Admin/Manager only"}), 403
     return jsonify(get_manager_analytics())
+
+@app.route("/api/ask-knowledge", methods=["POST"])
+@login_required
+def api_ask_knowledge():
+    data = request.get_json()
+    question = data.get("question", "").strip()
+    if not question:
+        return jsonify({"answer": "Please ask a question."})
+    return jsonify(answer_from_knowledge_base(question))
 
 
 # ============================================================
